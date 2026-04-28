@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Photo Grid Composer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +24,9 @@
 
     * { box-sizing: border-box; }
 
+    html, body {
+      overscroll-behavior: none;
+    }
     body {
       margin: 0;
       font-family: var(--serif);
@@ -31,6 +34,9 @@
       color: var(--ink);
       line-height: 1.5;
       min-height: 100vh;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
     }
 
     .container {
@@ -1011,7 +1017,7 @@
     // download
     const dl = document.createElement('button');
     dl.className = 'btn';
-    dl.textContent = 'Download PNG';
+    dl.textContent = 'Save PNG';
     dl.addEventListener('click', () => downloadComposite(used, cols, rows, cellSize, dividerW));
     els.previewArea.appendChild(dl);
   }
@@ -1022,6 +1028,27 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const c = effectiveCrop(photo);
     ctx.drawImage(photo.img, c.x, c.y, c.size, c.size, 0, 0, canvas.width, canvas.height);
+  }
+
+  async function saveOrShare(blob, filename) {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        // any other error → fall through to anchor download
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
   function downloadComposite(used, cols, rows, cellSize, dividerW) {
@@ -1052,14 +1079,7 @@
     });
 
     canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `photo-grid-${cols}x${rows}-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      saveOrShare(blob, `photo-grid-${cols}x${rows}-${Date.now()}.png`);
     }, 'image/png');
   }
 
