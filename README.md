@@ -28,7 +28,7 @@ Open `index.html` in any modern browser, or visit the live demo (link below).
 3. The output grid appears as soon as you have enough photos
 4. Click any cell to pan/zoom the framing
 5. Toggle **Center divider** if you want gaps between cells
-6. **Download PNG** when you're happy
+6. **Save PNG** when you're happy (mobile uses the native share sheet)
 
 Drag thumbnails in the Photos panel to reorder them.
 
