@@ -15,7 +15,8 @@ step, no framework, no backend.
   source photo. Drag · scroll wheel · pinch.
 - **Original-resolution export.** PNG output preserves the smallest
   source crop's resolution — no forced downscaling beyond that.
-- **Optional center divider** between cells for a paper-collage feel.
+- **Center divider options**: `None`, `Beige` (paper-collage), or
+  `Transparent` (PNG alpha — overlay nicely on any background).
 - **Lofi paper aesthetic.** Fraunces serif + JetBrains Mono on a warm
   beige palette.
 
@@ -27,7 +28,7 @@ Open `index.html` in any modern browser, or visit the live demo (link below).
 2. Drop in or select your photos (JPG / PNG / WEBP)
 3. The output grid appears as soon as you have enough photos
 4. Click any cell to pan/zoom the framing
-5. Toggle **Center divider** if you want gaps between cells
+5. Pick a **Divider** style (None / Beige / Transparent) for the gaps
 6. **Save PNG** when you're happy (mobile uses the native share sheet)
 
 Drag thumbnails in the Photos panel to reorder them.
