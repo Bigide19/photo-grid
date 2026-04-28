@@ -133,62 +133,55 @@
       letter-spacing: 0.1em;
     }
 
-    /* Toggle (divider) --------------------------------------- */
+    /* Options row + segmented control ------------------------ */
     .options-row {
       margin-bottom: 18px;
       display: flex;
-      gap: 22px;
+      gap: 14px;
       flex-wrap: wrap;
-    }
-    .toggle {
-      display: inline-flex;
       align-items: center;
-      gap: 10px;
+    }
+    .options-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .seg input[type=radio] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .seg label {
+      padding: 9px 14px;
       font-family: var(--mono);
       font-size: 11px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--ink-soft);
       cursor: pointer;
+      border-right: 1px solid var(--line);
+      transition: background 0.15s, color 0.15s;
       user-select: none;
     }
-    .toggle input[type=checkbox] {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 32px;
-      height: 18px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      position: relative;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-      margin: 0;
-      flex-shrink: 0;
-    }
-    .toggle input[type=checkbox]::before {
-      content: '';
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      top: 2px;
-      left: 2px;
-      background: var(--ink-soft);
-      border-radius: 50%;
-      transition: transform 0.15s, background 0.15s;
-    }
-    .toggle input[type=checkbox]:checked {
+    .seg label:last-of-type { border-right: none; }
+    .seg label:hover { background: var(--surface-2); color: var(--ink); }
+    .seg input[type=radio]:checked + label {
       background: var(--accent);
-      border-color: var(--accent);
+      color: white;
     }
-    .toggle input[type=checkbox]:checked::before {
-      transform: translateX(14px);
-      background: white;
+    .seg input[type=radio]:focus-visible + label {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
     }
-    .toggle:hover input[type=checkbox]:not(:checked) {
-      border-color: var(--ink-soft);
-    }
-    .toggle:has(input:checked) { color: var(--ink); }
 
     /* Photos panel ------------------------------------------- */
     .photos-header {
@@ -375,6 +368,16 @@
       display: grid;
       width: min(560px, 100%);
       background: var(--bg);
+    }
+    .output-grid.div-transparent {
+      background-color: transparent;
+      background-image:
+        linear-gradient(45deg, #c8b990 25%, transparent 25%),
+        linear-gradient(-45deg, #c8b990 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #c8b990 75%),
+        linear-gradient(-45deg, transparent 75%, #c8b990 75%);
+      background-size: 14px 14px;
+      background-position: 0 0, 0 7px, 7px -7px, -7px 0;
     }
     .output-cell {
       aspect-ratio: 1;
@@ -696,10 +699,15 @@
         <span>Output</span>
       </div>
       <div class="options-row">
-        <label class="toggle">
-          <input type="checkbox" id="dividerToggle">
-          <span>Center divider</span>
-        </label>
+        <span class="options-label">Divider</span>
+        <div class="seg" role="radiogroup" aria-label="Divider style">
+          <input type="radio" name="divider" value="none" id="div-none" checked>
+          <label for="div-none">None</label>
+          <input type="radio" name="divider" value="beige" id="div-beige">
+          <label for="div-beige">Beige</label>
+          <input type="radio" name="divider" value="transparent" id="div-transparent">
+          <label for="div-transparent">Transparent</label>
+        </div>
       </div>
       <div class="preview-area" id="previewArea">
         <div class="preview-empty">Add photos to see the grid</div>
@@ -744,7 +752,7 @@
   // ---------- State ----------
   const state = {
     targetCount: 4,
-    useDivider: false,
+    divider: 'none',     // 'none' | 'beige' | 'transparent'
     photos: [],          // {id, img, crop, originalFile}
     editingId: null,
     cropImgSize: null,   // {w, h} natural
@@ -764,7 +772,6 @@
     thumbs: $('thumbs'),
     resetBtn: $('resetBtn'),
     previewArea: $('previewArea'),
-    dividerToggle: $('dividerToggle'),
     modal: $('cropModal'),
     modalBackdrop: $('modalBackdrop'),
     cropImg: $('cropImg'),
@@ -792,9 +799,13 @@
     render();
   }
 
-  els.dividerToggle.addEventListener('change', e => {
-    state.useDivider = e.target.checked;
-    render();
+  document.querySelectorAll('input[name=divider]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (r.checked) {
+        state.divider = r.value;
+        render();
+      }
+    });
   });
 
   // ---------- Upload ----------
@@ -974,12 +985,14 @@
     const used = state.photos.slice(0, state.targetCount);
     const cols = colsFor(state.targetCount);
     const rows = cols;
-    const dispGap = state.useDivider ? Math.max(2, Math.round(560 / cols * 0.015)) : 0;
+    const hasDivider = state.divider !== 'none';
+    const dispGap = hasDivider ? Math.max(2, Math.round(560 / cols * 0.015)) : 0;
 
     els.previewArea.innerHTML = '';
 
     const grid = document.createElement('div');
     grid.className = 'output-grid';
+    if (state.divider === 'transparent') grid.classList.add('div-transparent');
     grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     grid.style.gap = `${dispGap}px`;
 
@@ -1005,13 +1018,14 @@
     // meta
     const sizes = used.map(p => effectiveCrop(p).size);
     const cellSize = Math.min(...sizes);
-    const dividerW = state.useDivider ? Math.max(2, Math.round(cellSize * 0.015)) : 0;
+    const dividerW = hasDivider ? Math.max(2, Math.round(cellSize * 0.015)) : 0;
     const totalW = cellSize * cols + dividerW * (cols - 1);
     const totalH = cellSize * rows + dividerW * (rows - 1);
 
     const meta = document.createElement('div');
     meta.className = 'preview-meta';
-    meta.textContent = `${totalW} × ${totalH} px · ${cols}×${rows} grid${state.useDivider ? ' · divider' : ''}`;
+    const divLabel = hasDivider ? ` · divider ${state.divider}` : '';
+    meta.textContent = `${totalW} × ${totalH} px · ${cols}×${rows} grid${divLabel}`;
     els.previewArea.appendChild(meta);
 
     // download
@@ -1060,11 +1074,12 @@
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingQuality = 'high';
 
-    if (dividerW > 0) {
+    if (dividerW > 0 && state.divider === 'beige') {
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f0e8d6';
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, totalW, totalH);
     }
+    // 'transparent' divider: leave canvas pixels in the gaps as alpha=0
 
     used.forEach((photo, i) => {
       const col = i % cols;
