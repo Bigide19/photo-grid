@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Grid Composer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0e8d6;
+      --surface: #faf4e6;
+      --surface-2: #f5ecd6;
+      --ink: #2a2418;
+      --ink-soft: #786a52;
+      --line: #d9caa6;
+      --line-soft: #e6d9b8;
+      --accent: #b8862a;
+      --serif: 'Fraunces', Georgia, serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --radius: 4px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--serif);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    /* Header ---------------------------------------------------- */
+    header.site {
+      margin-bottom: 56px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-style: italic;
+      font-size: 36px;
+      margin: 0;
+      letter-spacing: -0.015em;
+    }
+    .brand .subtitle {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* Panel ---------------------------------------------------- */
+    .panel { margin-bottom: 56px; }
+    .panel-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .panel-label .num { color: var(--accent); font-weight: 500; }
+    .panel-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    /* Layout selector ----------------------------------------- */
+    .layout-options { display: flex; gap: 14px; }
+    .layout-btn {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      cursor: pointer;
+      font-family: var(--mono);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 120px;
+      transition: all 0.15s;
+    }
+    .layout-btn:hover { border-color: var(--ink-soft); }
+    .layout-btn.active {
+      border-color: var(--accent);
+      background: var(--surface-2);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .layout-btn .preview {
+      display: grid;
+      gap: 2px;
+      width: 30px;
+      height: 30px;
+    }
+    .layout-btn .preview > div {
+      background: var(--ink-soft);
+      border-radius: 1px;
+      opacity: 0.5;
+    }
+    .layout-btn.active .preview > div {
+      background: var(--accent);
+      opacity: 1;
+    }
+    .layout-btn[data-count="4"] .preview { grid-template: repeat(2, 1fr) / repeat(2, 1fr); }
+    .layout-btn[data-count="9"] .preview { grid-template: repeat(3, 1fr) / repeat(3, 1fr); }
+    .layout-btn .label-text {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+    }
+
+    /* Toggle (divider) --------------------------------------- */
+    .options-row {
+      margin-bottom: 18px;
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle input[type=checkbox] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 32px;
+      height: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .toggle input[type=checkbox]::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      top: 2px;
+      left: 2px;
+      background: var(--ink-soft);
+      border-radius: 50%;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .toggle input[type=checkbox]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle input[type=checkbox]:checked::before {
+      transform: translateX(14px);
+      background: white;
+    }
+    .toggle:hover input[type=checkbox]:not(:checked) {
+      border-color: var(--ink-soft);
+    }
+    .toggle:has(input:checked) { color: var(--ink); }
+
+    /* Photos panel ------------------------------------------- */
+    .photos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .counter {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-soft);
+      letter-spacing: 0.05em;
+    }
+    .counter strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .counter.over strong { color: var(--accent); }
+    .clear-link {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s;
+    }
+    .clear-link:hover { color: var(--accent); }
+    .clear-link:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .dropzone {
+      display: block;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 44px 24px;
+      text-align: center;
+      background: var(--surface);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 24px;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--surface-2);
+    }
+    .dropzone .hint {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 17px;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .dropzone .sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.12em;
+    }
+
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .thumb {
+      position: relative;
+      aspect-ratio: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: grab;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .thumb:active { cursor: grabbing; }
+    .thumb:hover { box-shadow: 0 4px 16px rgba(42,36,24,0.12); }
+    .thumb.dragging { opacity: 0.4; }
+    .thumb.drag-over { box-shadow: 0 0 0 2px var(--accent); }
+    .thumb.thumb-extra { opacity: 0.45; }
+    .thumb canvas.img,
+    .thumb .img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .thumb .num {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb .del {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(250, 244, 230, 0.92);
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .thumb .del:hover { background: var(--accent); color: white; }
+    .thumb .res {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      background: rgba(42, 36, 24, 0.78);
+      color: rgba(255, 255, 255, 0.95);
+      padding: 2px 6px;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .thumb .badge {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      background: var(--accent);
+      color: white;
+      padding: 3px 7px;
+      border-radius: 2px;
+    }
+    .thumb-placeholder {
+      aspect-ratio: 1;
+      background: var(--surface);
+      border: 1px dashed var(--line-soft);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      opacity: 0.55;
+    }
+
+    /* Output panel ------------------------------------------- */
+    .preview-area {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 32px;
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .preview-empty {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 17px;
+      color: var(--ink-soft);
+      text-align: center;
+    }
+    .output-grid {
+      display: grid;
+      width: min(560px, 100%);
+      background: var(--bg);
+    }
+    .output-cell {
+      aspect-ratio: 1;
+      position: relative;
+      padding: 0;
+      border: none;
+      background: var(--surface-2);
+      cursor: pointer;
+      overflow: hidden;
+      font-family: inherit;
+      color: inherit;
+      transition: opacity 0.15s;
+    }
+    .output-cell canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+    .output-cell:hover { opacity: 0.92; }
+    .output-cell:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    .output-cell::after {
+      content: 'adjust';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: white;
+      background: rgba(20, 16, 12, 0.85);
+      padding: 7px 12px;
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .output-cell:hover::after,
+    .output-cell:focus-visible::after { opacity: 1; }
+    .preview-meta {
+      margin-top: 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 13px 22px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .preview-area .btn { margin-top: 18px; }
+
+    /* Modal -------------------------------------------------- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal[hidden] { display: none; }
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 16, 12, 0.72);
+      backdrop-filter: blur(2px);
+    }
+    .modal-content {
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 640px;
+      max-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-header h2 {
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 500;
+      font-size: 22px;
+      margin: 0;
+    }
+    .modal-hint {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ink-soft);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .crop-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      padding: 24px;
+      background: #1c1812;
+      min-height: 0;
+    }
+    .viewport {
+      width: min(480px, calc(100vh - 320px), 86vw);
+      aspect-ratio: 1;
+      position: relative;
+      overflow: hidden;
+      background: #0a0805;
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      flex-shrink: 0;
+    }
+    .viewport.grabbing { cursor: grabbing; }
+    .viewport img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      display: block;
+      max-width: none;
+      max-height: none;
+      width: auto;
+      height: auto;
+    }
+    .viewport-grid {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.4);
+      box-sizing: border-box;
+    }
+    .viewport-grid .line {
+      position: absolute;
+      background: rgba(255,255,255,0.25);
+    }
+    .viewport-grid .h { left: 0; right: 0; height: 1px; }
+    .viewport-grid .v { top: 0; bottom: 0; width: 1px; }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: min(480px, 86vw);
+    }
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      cursor: pointer;
+      font-size: 16px;
+      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .zoom-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+    .zoom-btn:active { background: rgba(255,255,255,0.15); }
+    .zoom-controls input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+      height: 16px;
+    }
+    .zoom-controls input[type=range]::-webkit-slider-runnable-track {
+      height: 2px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 1px;
+    }
+    .zoom-controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: -6px;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+    .zoom-controls input[type=range]::-moz-range-track {
+      height: 2px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 1px;
+    }
+    .zoom-controls input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid white;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    /* Responsive --------------------------------------------- */
+    @media (max-width: 640px) {
+      .container { padding: 32px 20px 72px; }
+      .brand h1 { font-size: 28px; }
+      .layout-options { flex-direction: column; }
+      .layout-btn { width: 100%; }
+      .modal-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .crop-area { padding: 14px; gap: 12px; }
+      .viewport { width: min(86vw, calc(100vh - 280px)); }
+      .modal-actions { padding: 12px 16px; }
+      .btn { padding: 11px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="site">
+      <div class="brand">
+        <h1>Photo Grid Composer</h1>
+        <div class="subtitle">crop · compose · export</div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-label">
+        <span class="num">01</span>
+        <span>Layout</span>
+      </div>
+      <div class="layout-options">
+        <button class="layout-btn active" data-count="4">
+          <div class="preview"><div></div><div></div><div></div><div></div></div>
+          <div class="label-text">2 × 2</div>
+        </button>
+        <button class="layout-btn" data-count="9">
+          <div class="preview"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+          <div class="label-text">3 × 3</div>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">
+        <span class="num">02</span>
+        <span>Photos</span>
+      </div>
+      <div class="photos-header">
+        <div class="counter" id="counter"><strong id="count">0</strong> / <span id="target">4</span> photos</div>
+        <button class="clear-link" id="resetBtn" disabled>Clear all</button>
+      </div>
+      <label class="dropzone" id="dropzone">
+        <div class="hint">Drop photos here, or click to choose</div>
+        <div class="sub">JPG · PNG · WEBP</div>
+        <input type="file" multiple accept="image/jpeg,image/png,image/webp" hidden id="fileInput">
+      </label>
+      <div class="thumbs" id="thumbs"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-label">
+        <span class="num">03</span>
+        <span>Output</span>
+      </div>
+      <div class="options-row">
+        <label class="toggle">
+          <input type="checkbox" id="dividerToggle">
+          <span>Center divider</span>
+        </label>
+      </div>
+      <div class="preview-area" id="previewArea">
+        <div class="preview-empty">Add photos to see the grid</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="cropModal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Frame</h2>
+        <span class="modal-hint">drag to pan · scroll · pinch to zoom</span>
+      </div>
+      <div class="crop-area">
+        <div class="viewport" id="viewport">
+          <img id="cropImg" alt="">
+          <div class="viewport-grid">
+            <div class="line h" style="top:33.333%"></div>
+            <div class="line h" style="top:66.666%"></div>
+            <div class="line v" style="left:33.333%"></div>
+            <div class="line v" style="left:66.666%"></div>
+          </div>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+          <input type="range" id="zoomSlider" min="0" max="1" step="0.001" value="0">
+          <button class="zoom-btn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+          <button class="zoom-btn" id="zoomReset" type="button" aria-label="Reset" title="Reset">↺</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cropCancel">Cancel</button>
+        <button class="btn" id="cropApply">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ---------- State ----------
+  const state = {
+    targetCount: 4,
+    useDivider: false,
+    photos: [],          // {id, img, crop, originalFile}
+    editingId: null,
+    cropImgSize: null,   // {w, h} natural
+    viewportSize: 0,
+    transform: null,     // {scale, tx, ty}
+    scaleMin: 1,
+    scaleMax: 1,
+  };
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    count: $('count'),
+    target: $('target'),
+    counter: $('counter'),
+    dropzone: $('dropzone'),
+    fileInput: $('fileInput'),
+    thumbs: $('thumbs'),
+    resetBtn: $('resetBtn'),
+    previewArea: $('previewArea'),
+    dividerToggle: $('dividerToggle'),
+    modal: $('cropModal'),
+    modalBackdrop: $('modalBackdrop'),
+    cropImg: $('cropImg'),
+    viewport: $('viewport'),
+    cropApply: $('cropApply'),
+    cropCancel: $('cropCancel'),
+    zoomOut: $('zoomOut'),
+    zoomIn: $('zoomIn'),
+    zoomReset: $('zoomReset'),
+    zoomSlider: $('zoomSlider'),
+  };
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const colsFor = n => n === 4 ? 2 : 3;
+
+  // ---------- Layout ----------
+  document.querySelectorAll('.layout-btn').forEach(b => {
+    b.addEventListener('click', () => setLayout(parseInt(b.dataset.count, 10)));
+  });
+
+  function setLayout(count) {
+    state.targetCount = count;
+    document.querySelectorAll('.layout-btn').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.count, 10) === count));
+    render();
+  }
+
+  els.dividerToggle.addEventListener('change', e => {
+    state.useDivider = e.target.checked;
+    render();
+  });
+
+  // ---------- Upload ----------
+  els.fileInput.addEventListener('change', e => {
+    addFiles(e.target.files);
+    e.target.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    els.dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      els.dropzone.classList.add('dragover');
+    }));
+  ['dragleave', 'drop'].forEach(ev =>
+    els.dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      els.dropzone.classList.remove('dragover');
+    }));
+  els.dropzone.addEventListener('drop', e => {
+    if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+  });
+
+  async function addFiles(fileList) {
+    const valid = Array.from(fileList).filter(f =>
+      /^image\/(jpeg|jpg|png|webp)$/.test(f.type));
+    for (const file of valid) {
+      try {
+        const img = await loadImage(file);
+        state.photos.push({
+          id: crypto.randomUUID(),
+          img,
+          crop: null,
+          originalFile: file,
+        });
+      } catch {}
+    }
+    render();
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('image load failed'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  // ---------- Geometry helpers ----------
+  function autoCenterCrop(img) {
+    const size = Math.min(img.naturalWidth, img.naturalHeight);
+    const x = Math.floor((img.naturalWidth - size) / 2);
+    const y = Math.floor((img.naturalHeight - size) / 2);
+    return { x, y, size };
+  }
+
+  function effectiveCrop(photo) {
+    return photo.crop ?? autoCenterCrop(photo.img);
+  }
+
+  // ---------- Render ----------
+  function render() {
+    const n = state.photos.length;
+    els.count.textContent = n;
+    els.target.textContent = state.targetCount;
+    els.counter.classList.toggle('over', n > state.targetCount);
+    els.resetBtn.disabled = n === 0;
+
+    // Thumbnails
+    els.thumbs.innerHTML = '';
+    state.photos.forEach((photo, idx) => {
+      els.thumbs.appendChild(makeThumb(photo, idx));
+    });
+    for (let i = n; i < state.targetCount; i++) {
+      const ph = document.createElement('div');
+      ph.className = 'thumb-placeholder';
+      ph.textContent = i + 1;
+      els.thumbs.appendChild(ph);
+    }
+
+    // Output preview
+    if (n >= state.targetCount) {
+      renderOutputGrid();
+    } else {
+      els.previewArea.innerHTML = `<div class="preview-empty">Add ${state.targetCount - n} more photo${state.targetCount - n === 1 ? '' : 's'} to see the grid</div>`;
+    }
+  }
+
+  function makeThumb(photo, idx) {
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.dataset.id = photo.id;
+    div.draggable = true;
+    if (idx >= state.targetCount) div.classList.add('thumb-extra');
+
+    const canvas = renderThumbCanvas(photo);
+    canvas.classList.add('img');
+    div.appendChild(canvas);
+
+    const num = document.createElement('div');
+    num.className = 'num';
+    num.textContent = idx + 1;
+    div.appendChild(num);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.type = 'button';
+    del.textContent = '×';
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      removePhoto(photo.id);
+    });
+    div.appendChild(del);
+
+    const res = document.createElement('div');
+    res.className = 'res';
+    res.textContent = `${photo.img.naturalWidth}×${photo.img.naturalHeight}`;
+    div.appendChild(res);
+
+    if (photo.crop) {
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      badge.textContent = 'CROPPED';
+      div.appendChild(badge);
+    }
+
+    // Drag-and-drop reorder
+    div.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', photo.id);
+      div.classList.add('dragging');
+    });
+    div.addEventListener('dragend', () => div.classList.remove('dragging'));
+    div.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      div.classList.add('drag-over');
+    });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.classList.remove('drag-over');
+      const fromId = e.dataTransfer.getData('text/plain');
+      if (fromId && fromId !== photo.id) reorder(fromId, photo.id);
+    });
+
+    return div;
+  }
+
+  function renderThumbCanvas(photo, size = 240) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    const c = effectiveCrop(photo);
+    ctx.drawImage(photo.img, c.x, c.y, c.size, c.size, 0, 0, size, size);
+    return canvas;
+  }
+
+  function removePhoto(id) {
+    state.photos = state.photos.filter(p => p.id !== id);
+    render();
+  }
+
+  function reorder(fromId, toId) {
+    const fromIdx = state.photos.findIndex(p => p.id === fromId);
+    const toIdx = state.photos.findIndex(p => p.id === toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = state.photos.splice(fromIdx, 1);
+    state.photos.splice(toIdx, 0, moved);
+    render();
+  }
+
+  // ---------- Output grid ----------
+  function renderOutputGrid() {
+    const used = state.photos.slice(0, state.targetCount);
+    const cols = colsFor(state.targetCount);
+    const rows = cols;
+    const dispGap = state.useDivider ? Math.max(2, Math.round(560 / cols * 0.015)) : 0;
+
+    els.previewArea.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'output-grid';
+    grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    grid.style.gap = `${dispGap}px`;
+
+    used.forEach(photo => {
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'output-cell';
+      cell.dataset.photoId = photo.id;
+
+      const cellPx = 480;
+      const canvas = document.createElement('canvas');
+      canvas.width = cellPx;
+      canvas.height = cellPx;
+      drawCellCanvas(canvas, photo);
+      cell.appendChild(canvas);
+
+      cell.addEventListener('click', () => openCrop(photo.id));
+      grid.appendChild(cell);
+    });
+
+    els.previewArea.appendChild(grid);
+
+    // meta
+    const sizes = used.map(p => effectiveCrop(p).size);
+    const cellSize = Math.min(...sizes);
+    const dividerW = state.useDivider ? Math.max(2, Math.round(cellSize * 0.015)) : 0;
+    const totalW = cellSize * cols + dividerW * (cols - 1);
+    const totalH = cellSize * rows + dividerW * (rows - 1);
+
+    const meta = document.createElement('div');
+    meta.className = 'preview-meta';
+    meta.textContent = `${totalW} × ${totalH} px · ${cols}×${rows} grid${state.useDivider ? ' · divider' : ''}`;
+    els.previewArea.appendChild(meta);
+
+    // download
+    const dl = document.createElement('button');
+    dl.className = 'btn';
+    dl.textContent = 'Download PNG';
+    dl.addEventListener('click', () => downloadComposite(used, cols, rows, cellSize, dividerW));
+    els.previewArea.appendChild(dl);
+  }
+
+  function drawCellCanvas(canvas, photo) {
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const c = effectiveCrop(photo);
+    ctx.drawImage(photo.img, c.x, c.y, c.size, c.size, 0, 0, canvas.width, canvas.height);
+  }
+
+  function downloadComposite(used, cols, rows, cellSize, dividerW) {
+    const totalW = cellSize * cols + dividerW * (cols - 1);
+    const totalH = cellSize * rows + dividerW * (rows - 1);
+    const canvas = document.createElement('canvas');
+    canvas.width = totalW;
+    canvas.height = totalH;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+
+    if (dividerW > 0) {
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#f0e8d6';
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, totalW, totalH);
+    }
+
+    used.forEach((photo, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const c = effectiveCrop(photo);
+      ctx.drawImage(
+        photo.img,
+        c.x, c.y, c.size, c.size,
+        col * (cellSize + dividerW), row * (cellSize + dividerW),
+        cellSize, cellSize
+      );
+    });
+
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `photo-grid-${cols}x${rows}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }, 'image/png');
+  }
+
+  // ---------- Reset ----------
+  els.resetBtn.addEventListener('click', () => {
+    if (state.photos.length && !confirm('All photos will be cleared. Continue?')) return;
+    state.photos = [];
+    render();
+  });
+
+  // ---------- Crop modal: pan / zoom ----------
+  function openCrop(id) {
+    const photo = state.photos.find(p => p.id === id);
+    if (!photo) return;
+    state.editingId = id;
+    state.cropImgSize = { w: photo.img.naturalWidth, h: photo.img.naturalHeight };
+
+    const setup = () => {
+      els.modal.hidden = false;
+      const tryInit = () => {
+        const r = els.viewport.getBoundingClientRect();
+        if (r.width > 0) initTransformForPhoto(photo);
+        else requestAnimationFrame(tryInit);
+      };
+      requestAnimationFrame(tryInit);
+    };
+
+    if (els.cropImg.src === photo.img.src && els.cropImg.complete) {
+      setup();
+    } else {
+      els.cropImg.onload = setup;
+      els.cropImg.src = photo.img.src;
+    }
+  }
+
+  function initTransformForPhoto(photo) {
+    const vp = els.viewport.getBoundingClientRect().width;
+    state.viewportSize = vp;
+
+    const { w: nW, h: nH } = state.cropImgSize;
+    state.scaleMin = Math.max(vp / nW, vp / nH);
+    state.scaleMax = Math.max(state.scaleMin * 1.2, Math.min(vp / 20, state.scaleMin * 8));
+
+    let scale, tx, ty;
+    if (photo.crop) {
+      scale = vp / photo.crop.size;
+      tx = -photo.crop.x * scale;
+      ty = -photo.crop.y * scale;
+    } else {
+      scale = state.scaleMin;
+      tx = (vp - nW * scale) / 2;
+      ty = (vp - nH * scale) / 2;
+    }
+    state.transform = { scale, tx, ty };
+    clampTransform();
+    syncSliderRange();
+    applyTransform();
+  }
+
+  function clampTransform() {
+    const t = state.transform;
+    if (!t) return;
+    t.scale = clamp(t.scale, state.scaleMin, state.scaleMax);
+    const dispW = state.cropImgSize.w * t.scale;
+    const dispH = state.cropImgSize.h * t.scale;
+    t.tx = clamp(t.tx, state.viewportSize - dispW, 0);
+    t.ty = clamp(t.ty, state.viewportSize - dispH, 0);
+  }
+
+  function applyTransform() {
+    const t = state.transform;
+    if (!t) return;
+    els.cropImg.style.transform = `translate(${t.tx}px, ${t.ty}px) scale(${t.scale})`;
+    syncSliderValue();
+  }
+
+  function syncSliderRange() {
+    els.zoomSlider.min = '0';
+    els.zoomSlider.max = '1';
+    els.zoomSlider.step = '0.001';
+  }
+
+  function syncSliderValue() {
+    if (state.scaleMax === state.scaleMin) {
+      els.zoomSlider.value = '0';
+      return;
+    }
+    const t = state.transform;
+    const v = (t.scale - state.scaleMin) / (state.scaleMax - state.scaleMin);
+    els.zoomSlider.value = String(clamp(v, 0, 1));
+  }
+
+  function setScaleAround(newScale, anchorVp) {
+    const t = state.transform;
+    const oldScale = t.scale;
+    newScale = clamp(newScale, state.scaleMin, state.scaleMax);
+    if (newScale === oldScale) return;
+    const nAtAnchor = {
+      x: (anchorVp.x - t.tx) / oldScale,
+      y: (anchorVp.y - t.ty) / oldScale,
+    };
+    t.scale = newScale;
+    t.tx = anchorVp.x - nAtAnchor.x * newScale;
+    t.ty = anchorVp.y - nAtAnchor.y * newScale;
+    clampTransform();
+    applyTransform();
+  }
+
+  els.zoomSlider.addEventListener('input', e => {
+    if (!state.transform) return;
+    const v = parseFloat(e.target.value);
+    const newScale = state.scaleMin + (state.scaleMax - state.scaleMin) * v;
+    const vp = state.viewportSize;
+    setScaleAround(newScale, { x: vp / 2, y: vp / 2 });
+  });
+
+  function zoomBy(factor) {
+    if (!state.transform) return;
+    const vp = state.viewportSize;
+    setScaleAround(state.transform.scale * factor, { x: vp / 2, y: vp / 2 });
+  }
+  els.zoomIn.addEventListener('click', () => zoomBy(1.2));
+  els.zoomOut.addEventListener('click', () => zoomBy(1 / 1.2));
+  els.zoomReset.addEventListener('click', () => {
+    if (!state.transform) return;
+    const { w: nW, h: nH } = state.cropImgSize;
+    const vp = state.viewportSize;
+    state.transform.scale = state.scaleMin;
+    state.transform.tx = (vp - nW * state.scaleMin) / 2;
+    state.transform.ty = (vp - nH * state.scaleMin) / 2;
+    clampTransform();
+    applyTransform();
+  });
+
+  els.viewport.addEventListener('wheel', e => {
+    if (!state.transform) return;
+    e.preventDefault();
+    const factor = Math.exp(-e.deltaY * 0.0015);
+    const vpRect = els.viewport.getBoundingClientRect();
+    const anchor = { x: e.clientX - vpRect.left, y: e.clientY - vpRect.top };
+    setScaleAround(state.transform.scale * factor, anchor);
+  }, { passive: false });
+
+  const pointers = new Map();
+  let gesture = null;
+
+  function snapshotGesture() {
+    gesture = {
+      transform: { ...state.transform },
+      pointers: new Map(pointers),
+    };
+  }
+
+  els.viewport.addEventListener('pointerdown', e => {
+    if (!state.transform) return;
+    e.preventDefault();
+    els.viewport.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    snapshotGesture();
+    els.viewport.classList.add('grabbing');
+  });
+
+  els.viewport.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId) || !gesture || !state.transform) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    const cur = Array.from(pointers.values());
+    const start = Array.from(gesture.pointers.values());
+
+    if (cur.length === 1 && start.length === 1) {
+      const dx = cur[0].x - start[0].x;
+      const dy = cur[0].y - start[0].y;
+      state.transform.tx = gesture.transform.tx + dx;
+      state.transform.ty = gesture.transform.ty + dy;
+      clampTransform();
+      applyTransform();
+    } else if (cur.length >= 2 && start.length >= 2) {
+      const sd = Math.hypot(start[1].x - start[0].x, start[1].y - start[0].y);
+      const cd = Math.hypot(cur[1].x - cur[0].x, cur[1].y - cur[0].y);
+      if (sd === 0) return;
+
+      const vpRect = els.viewport.getBoundingClientRect();
+      const sCenter = {
+        x: (start[0].x + start[1].x) / 2 - vpRect.left,
+        y: (start[0].y + start[1].y) / 2 - vpRect.top,
+      };
+      const cCenter = {
+        x: (cur[0].x + cur[1].x) / 2 - vpRect.left,
+        y: (cur[0].y + cur[1].y) / 2 - vpRect.top,
+      };
+
+      const oldScale = gesture.transform.scale;
+      const newScale = clamp(oldScale * (cd / sd), state.scaleMin, state.scaleMax);
+      const naturalAtCenter = {
+        x: (sCenter.x - gesture.transform.tx) / oldScale,
+        y: (sCenter.y - gesture.transform.ty) / oldScale,
+      };
+      state.transform.scale = newScale;
+      state.transform.tx = cCenter.x - naturalAtCenter.x * newScale;
+      state.transform.ty = cCenter.y - naturalAtCenter.y * newScale;
+      clampTransform();
+      applyTransform();
+    }
+  });
+
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      gesture = null;
+      els.viewport.classList.remove('grabbing');
+    } else {
+      snapshotGesture();
+    }
+    try { els.viewport.releasePointerCapture(e.pointerId); } catch {}
+  }
+  els.viewport.addEventListener('pointerup', endPointer);
+  els.viewport.addEventListener('pointercancel', endPointer);
+
+  function closeCrop() {
+    els.modal.hidden = true;
+    state.editingId = null;
+    state.transform = null;
+    state.cropImgSize = null;
+    pointers.clear();
+    gesture = null;
+    els.viewport.classList.remove('grabbing');
+  }
+
+  els.cropCancel.addEventListener('click', closeCrop);
+  els.modalBackdrop.addEventListener('click', closeCrop);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !els.modal.hidden) closeCrop();
+  });
+
+  els.cropApply.addEventListener('click', () => {
+    const photo = state.photos.find(p => p.id === state.editingId);
+    if (photo && state.transform) {
+      const t = state.transform;
+      const vp = state.viewportSize;
+      const { w: nW, h: nH } = state.cropImgSize;
+      const sx = clamp(Math.round(-t.tx / t.scale), 0, nW);
+      const sy = clamp(Math.round(-t.ty / t.scale), 0, nH);
+      const ssize = Math.min(
+        Math.round(vp / t.scale),
+        nW - sx,
+        nH - sy
+      );
+      photo.crop = { x: sx, y: sy, size: ssize };
+    }
+    closeCrop();
+    render();
+  });
+
+  window.addEventListener('resize', () => {
+    if (els.modal.hidden || !state.transform) return;
+    const newVp = els.viewport.getBoundingClientRect().width;
+    if (newVp === state.viewportSize || newVp === 0) return;
+    const t = state.transform;
+    const naturalCenter = {
+      x: (state.viewportSize / 2 - t.tx) / t.scale,
+      y: (state.viewportSize / 2 - t.ty) / t.scale,
+    };
+    const naturalSize = state.viewportSize / t.scale;
+    state.viewportSize = newVp;
+    state.scaleMin = Math.max(newVp / state.cropImgSize.w, newVp / state.cropImgSize.h);
+    state.scaleMax = Math.max(state.scaleMin * 1.2, Math.min(newVp / 20, state.scaleMin * 8));
+    state.transform.scale = clamp(newVp / naturalSize, state.scaleMin, state.scaleMax);
+    state.transform.tx = newVp / 2 - naturalCenter.x * state.transform.scale;
+    state.transform.ty = newVp / 2 - naturalCenter.y * state.transform.scale;
+    clampTransform();
+    applyTransform();
+  });
+
+  // ---------- Init ----------
+  render();
+  </script>
+</body>
+</html>
